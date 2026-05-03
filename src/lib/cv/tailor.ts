@@ -29,6 +29,22 @@ export type TailorAnalysis = {
   summaryFocus: string;
 };
 
+export type CvMatchAnalysis = {
+  isReady: boolean;
+  score: number;
+  scoreLabel: string;
+  summary: string;
+  matchedTechnicalKeywords: string[];
+  missingTechnicalKeywords: string[];
+  matchedSoftKeywords: string[];
+  missingSoftKeywords: string[];
+  matchedRole: boolean;
+  technicalCoverage: number;
+  softCoverage: number;
+  roleCoverage: number;
+  recommendations: string[];
+};
+
 const KEYWORD_RULES: KeywordRule[] = [
   { label: "Node.js", bucket: "backend", patterns: [/node\.?js/i] },
   { label: "React.js", bucket: "frontend", patterns: [/react(?:\.js)?/i] },
@@ -132,6 +148,142 @@ function buildSummaryFocus(targetRole: string, topTechnical: string[], softKeywo
   }
 
   return targetRole ? `Tailored for ${targetRole}.` : "";
+}
+
+function getRulesForLabels(labels: string[]) {
+  return KEYWORD_RULES.filter((rule) => labels.includes(rule.label));
+}
+
+function clampPercentage(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function buildRoleRegex(targetRole: string) {
+  const normalized = targetRole
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .split(/\s+/)
+    .filter((token) => token.length > 2);
+
+  if (normalized.length === 0) {
+    return null;
+  }
+
+  const coreTokens = normalized.slice(0, 4).map((token) =>
+    token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+  );
+
+  return new RegExp(coreTokens.join(".*"), "i");
+}
+
+function getScoreLabel(score: number) {
+  if (score >= 80) {
+    return "Strong Match";
+  }
+
+  if (score >= 60) {
+    return "Good Match";
+  }
+
+  if (score >= 40) {
+    return "Partial Match";
+  }
+
+  return "Needs Tailoring";
+}
+
+export function analyzeCvJobMatch(
+  cvContent: string,
+  analysis: TailorAnalysis
+): CvMatchAnalysis {
+  const normalizedCv = cvContent.trim();
+  const hasJobDescription =
+    analysis.detectedKeywords.length > 0 || Boolean(analysis.targetRole);
+
+  if (!normalizedCv || !hasJobDescription) {
+    return {
+      isReady: false,
+      score: 0,
+      scoreLabel: "No Match Score Yet",
+      summary:
+        "Paste job description untuk menghitung kecocokan CV aktif terhadap role target.",
+      matchedTechnicalKeywords: [],
+      missingTechnicalKeywords: [],
+      matchedSoftKeywords: [],
+      missingSoftKeywords: [],
+      matchedRole: false,
+      technicalCoverage: 0,
+      softCoverage: 0,
+      roleCoverage: 0,
+      recommendations: [
+        "Paste job description terlebih dulu untuk melihat keyword yang sudah masuk dan yang masih kurang.",
+      ],
+    };
+  }
+
+  const technicalRules = getRulesForLabels(analysis.technicalKeywords);
+  const softRules = getRulesForLabels(analysis.softKeywords);
+  const matchedTechnicalKeywords = technicalRules
+    .filter((rule) => rule.patterns.some((pattern) => pattern.test(normalizedCv)))
+    .map((rule) => rule.label);
+  const matchedSoftKeywords = softRules
+    .filter((rule) => rule.patterns.some((pattern) => pattern.test(normalizedCv)))
+    .map((rule) => rule.label);
+  const missingTechnicalKeywords = analysis.technicalKeywords.filter(
+    (label) => !matchedTechnicalKeywords.includes(label)
+  );
+  const missingSoftKeywords = analysis.softKeywords.filter(
+    (label) => !matchedSoftKeywords.includes(label)
+  );
+  const roleRegex = buildRoleRegex(analysis.targetRole);
+  const matchedRole = roleRegex ? roleRegex.test(normalizedCv) : true;
+  const technicalCoverage =
+    analysis.technicalKeywords.length > 0
+      ? matchedTechnicalKeywords.length / analysis.technicalKeywords.length
+      : 1;
+  const softCoverage =
+    analysis.softKeywords.length > 0
+      ? matchedSoftKeywords.length / analysis.softKeywords.length
+      : 1;
+  const roleCoverage = analysis.targetRole ? (matchedRole ? 1 : 0) : 1;
+  const score = clampPercentage(
+    technicalCoverage * 65 + softCoverage * 20 + roleCoverage * 15
+  );
+  const recommendations = [
+    missingTechnicalKeywords.length > 0
+      ? `Tambahkan atau perjelas keyword teknis seperti ${missingTechnicalKeywords
+          .slice(0, 4)
+          .join(", ")} di summary, skills, atau experience.`
+      : "",
+    missingSoftKeywords.length > 0
+      ? `Perkuat sinyal soft-skill seperti ${missingSoftKeywords
+          .slice(0, 3)
+          .join(", ")} lewat bullet impact atau collaboration examples.`
+      : "",
+    analysis.targetRole && !matchedRole
+      ? `Sebutkan role target "${analysis.targetRole}" atau headline yang lebih dekat di CV utama.`
+      : "",
+  ].filter(Boolean);
+
+  return {
+    isReady: true,
+    score,
+    scoreLabel: getScoreLabel(score),
+    summary:
+      recommendations[0] ||
+      (score >= 80
+        ? "CV aktif sudah cukup selaras dengan kebutuhan lowongan ini."
+        : "Masih ada beberapa sinyal yang bisa diperkuat sebelum export final."),
+    matchedTechnicalKeywords,
+    missingTechnicalKeywords,
+    matchedSoftKeywords,
+    missingSoftKeywords,
+    matchedRole,
+    technicalCoverage: clampPercentage(technicalCoverage * 100),
+    softCoverage: clampPercentage(softCoverage * 100),
+    roleCoverage: clampPercentage(roleCoverage * 100),
+    recommendations,
+  };
 }
 
 export function analyzeJobDescription(jobDescription: string): TailorAnalysis {

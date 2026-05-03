@@ -41,6 +41,7 @@ import {
 } from "@/lib/cv/formats";
 import { CV_TEMPLATE_MARKDOWN } from "@/lib/cv/template";
 import {
+  analyzeCvJobMatch,
   analyzeJobDescription,
   tailorAtsCvForm,
   tailorMarkdownContent,
@@ -113,6 +114,8 @@ type DraftSnapshot = {
 type ImportedSnapshot = Partial<DraftSnapshot> & {
   draftName?: string;
 };
+
+type PreviewPanel = "cv" | "cover-letter" | "recruiter" | "insights";
 
 function formatSavedTime(value: string | null) {
   if (!value) {
@@ -318,6 +321,8 @@ export function CvDocxGenerator() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [activePreviewPanel, setActivePreviewPanel] =
+    useState<PreviewPanel>("cv");
 
   const activeMode =
     INPUT_MODES.find((mode) => mode.id === inputMode) || INPUT_MODES[0];
@@ -351,6 +356,7 @@ export function CvDocxGenerator() {
     coverLetterForm,
     language: communicationLanguage,
   });
+  const matchAnalysis = analyzeCvJobMatch(generatedMarkdown, tailoring);
 
   const buildSnapshot = useCallback(
     (savedAt: string): DraftSnapshot => ({
@@ -1035,6 +1041,23 @@ export function CvDocxGenerator() {
   const canRemoveProfessionalExperience = professionalForm.experiences.length > 1;
   const canRemoveProfessionalEducation = professionalForm.education.length > 1;
   const canRemoveAtsExperience = atsForm.experiences.length > 1;
+  const availableOutputCount = [
+    generatedMarkdown.trim(),
+    generatedCoverLetter.trim(),
+    recruiterMessage.trim(),
+  ].filter(Boolean).length;
+  const activeAssetCount = [
+    visualAssets.profilePhoto,
+    visualAssets.signature,
+  ].filter(Boolean).length;
+  const selectedTemplateLabel =
+    DOCX_TEMPLATE_OPTIONS.find((template) => template.id === selectedTemplate)
+      ?.label || selectedTemplate;
+  const workflowSteps = [
+    "Pilih format CV yang paling cocok",
+    "Tailor konten dari job description",
+    "Generate CV, cover letter, dan recruiter message",
+  ];
 
   return (
     <main className="page-shell">
@@ -1049,6 +1072,42 @@ export function CvDocxGenerator() {
           Markdown bebas. Semua mode akan diubah jadi dokumen Word saat kamu
           generate.
         </p>
+          <div className="hero-stats">
+            <div className="hero-stat-card">
+              <strong>{activeMode.title}</strong>
+              <span>Current builder format</span>
+            </div>
+          <div className="hero-stat-card">
+            <strong>{selectedTemplateLabel}</strong>
+            <span>Selected export template</span>
+          </div>
+          <div className="hero-stat-card">
+            <strong>{availableOutputCount} outputs</strong>
+            <span>Ready to copy or export</span>
+            </div>
+            <div className="hero-stat-card">
+              <strong>
+                {matchAnalysis.isReady
+                  ? `${matchAnalysis.score}%`
+                  : tailoring.detectedKeywords.length > 0
+                    ? `${tailoring.detectedKeywords.length} keywords`
+                    : "No JD yet"}
+              </strong>
+              <span>
+                {matchAnalysis.isReady
+                  ? matchAnalysis.scoreLabel
+                  : "Tailoring signal detected"}
+              </span>
+            </div>
+          </div>
+        <div className="workflow-strip">
+          {workflowSteps.map((step, index) => (
+            <div className="workflow-card" key={step}>
+              <span className="workflow-index">0{index + 1}</span>
+              <p>{step}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="layout-grid">
@@ -1332,6 +1391,110 @@ export function CvDocxGenerator() {
                 Tailor ATS Form
               </button>
             </div>
+
+            <div className="match-summary-grid">
+              <div className="match-card match-card-primary">
+                <span className="match-label">CV Match Score</span>
+                <strong>
+                  {matchAnalysis.isReady ? `${matchAnalysis.score}%` : "--"}
+                </strong>
+                <p>
+                  {matchAnalysis.isReady
+                    ? matchAnalysis.scoreLabel
+                    : "Tambahkan job description untuk menghitung score."}
+                </p>
+                <div className="match-progress">
+                  <span
+                    className="match-progress-bar"
+                    style={{
+                      width: `${matchAnalysis.isReady ? matchAnalysis.score : 0}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="match-card">
+                <span className="match-label">Matched Keywords</span>
+                <strong>
+                  {matchAnalysis.matchedTechnicalKeywords.length +
+                    matchAnalysis.matchedSoftKeywords.length}
+                </strong>
+                <p>
+                  {matchAnalysis.matchedTechnicalKeywords.length > 0 ||
+                  matchAnalysis.matchedSoftKeywords.length > 0
+                    ? [
+                        ...matchAnalysis.matchedTechnicalKeywords,
+                        ...matchAnalysis.matchedSoftKeywords,
+                      ]
+                        .slice(0, 4)
+                        .join(", ")
+                    : "Belum ada keyword yang terdeteksi cocok."}
+                </p>
+              </div>
+
+              <div className="match-card">
+                <span className="match-label">Missing Signals</span>
+                <strong>
+                  {matchAnalysis.missingTechnicalKeywords.length +
+                    matchAnalysis.missingSoftKeywords.length +
+                    (matchAnalysis.matchedRole ? 0 : tailoring.targetRole ? 1 : 0)}
+                </strong>
+                <p>
+                  {matchAnalysis.missingTechnicalKeywords.length > 0 ||
+                  matchAnalysis.missingSoftKeywords.length > 0
+                    ? [
+                        ...matchAnalysis.missingTechnicalKeywords,
+                        ...matchAnalysis.missingSoftKeywords,
+                      ]
+                        .slice(0, 4)
+                        .join(", ")
+                    : matchAnalysis.isReady
+                      ? "Tidak ada gap besar yang terdeteksi."
+                      : "Belum ada gap karena job description belum dipaste."}
+                </p>
+              </div>
+            </div>
+
+            {matchAnalysis.isReady ? (
+              <div className="coverage-grid">
+                <div className="coverage-item">
+                  <div className="coverage-head">
+                    <strong>Technical Coverage</strong>
+                    <span>{matchAnalysis.technicalCoverage}%</span>
+                  </div>
+                  <div className="coverage-track">
+                    <span
+                      className="coverage-fill"
+                      style={{ width: `${matchAnalysis.technicalCoverage}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="coverage-item">
+                  <div className="coverage-head">
+                    <strong>Soft-Skill Coverage</strong>
+                    <span>{matchAnalysis.softCoverage}%</span>
+                  </div>
+                  <div className="coverage-track">
+                    <span
+                      className="coverage-fill coverage-fill-soft"
+                      style={{ width: `${matchAnalysis.softCoverage}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="coverage-item">
+                  <div className="coverage-head">
+                    <strong>Role Alignment</strong>
+                    <span>{matchAnalysis.roleCoverage}%</span>
+                  </div>
+                  <div className="coverage-track">
+                    <span
+                      className="coverage-fill coverage-fill-role"
+                      style={{ width: `${matchAnalysis.roleCoverage}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </section>
 
           <section className="section-card section-card-inline">
@@ -2225,39 +2388,87 @@ export function CvDocxGenerator() {
             </div>
           ) : null}
 
-          <div className="actions">
-            <button
-              type="button"
-              className="button button-primary"
-              onClick={handleDownload}
-              disabled={isDownloading || !generatedMarkdown.trim()}
-            >
-              {isDownloading ? "Generating DOCX..." : "Download DOCX"}
-            </button>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={handleDownloadPdf}
-              disabled={isDownloading || !generatedMarkdown.trim()}
-            >
-              Download PDF
-            </button>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={handleCopy}
-              disabled={!generatedMarkdown.trim()}
-            >
-              Copy CV Output
-            </button>
-            <button
-              type="button"
-              className="button button-secondary"
-              onClick={resetCurrentMode}
-            >
-              Reset Template
-            </button>
-          </div>
+          <section className="section-card output-studio">
+            <div className="section-header section-header-actions">
+              <div>
+                <h3>Output Studio</h3>
+                <p>
+                  Saat isi CV sudah siap, generate file utama dari sini. Cover
+                  letter dan recruiter message tetap bisa kamu atur dari section
+                  masing-masing di atas.
+                </p>
+              </div>
+              <div className="studio-pills">
+                <span className="pill">{selectedTemplateLabel}</span>
+                <span className="pill">{activeMode.title}</span>
+                <span className="pill">
+                  {communicationLanguage === "id"
+                    ? "Bahasa Indonesia"
+                    : "English"}
+                </span>
+              </div>
+            </div>
+
+            <div className="output-grid">
+              <div className="output-card output-card-primary">
+                <strong>Main CV Export</strong>
+                <p>
+                  Generate file utama dengan template <code>{selectedTemplateLabel}</code>
+                  {" "}dan nama file <code>{fileName}</code>.
+                </p>
+                <div className="actions actions-tight">
+                  <button
+                    type="button"
+                    className="button button-primary"
+                    onClick={handleDownload}
+                    disabled={isDownloading || !generatedMarkdown.trim()}
+                  >
+                    {isDownloading ? "Generating DOCX..." : "Download DOCX"}
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={handleDownloadPdf}
+                    disabled={isDownloading || !generatedMarkdown.trim()}
+                  >
+                    Download PDF
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={handleCopy}
+                    disabled={!generatedMarkdown.trim()}
+                  >
+                    Copy CV Output
+                  </button>
+                </div>
+              </div>
+
+              <div className="output-card">
+                <strong>Editing Utilities</strong>
+                <p>
+                  Reset template aktif, simpan draft lokal, dan lanjut revisi tanpa
+                  takut kehilangan progress.
+                </p>
+                <div className="actions actions-tight">
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={saveDraftNow}
+                  >
+                    Save Draft
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={resetCurrentMode}
+                  >
+                    Reset Template
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
 
           {error ? <div className="status status-error">{error}</div> : null}
           {status ? <div className="status status-success">{status}</div> : null}
@@ -2271,12 +2482,20 @@ export function CvDocxGenerator() {
           </p>
         </div>
 
-        <aside className="card panel aside-stack">
-          <h2>Live DOCX Source</h2>
-          <p className="aside-copy">
-            Preview ini menunjukkan isi final yang akan dipakai saat generate
-            `.docx`.
-          </p>
+        <aside className="card panel aside-stack aside-sticky">
+          <div className="aside-header">
+            <div>
+              <h2>Preview Studio</h2>
+              <p className="aside-copy">
+                Pantau hasil akhir CV, cover letter, recruiter message, dan
+                insight utama tanpa perlu scroll terlalu jauh.
+              </p>
+            </div>
+            <div className="studio-pills">
+              <span className="pill">{availableOutputCount} ready</span>
+              <span className="pill">{activeAssetCount} assets</span>
+            </div>
+          </div>
 
           <div className="asset-preview-stack">
             <div className="asset-preview-panel">
@@ -2311,25 +2530,113 @@ export function CvDocxGenerator() {
             </div>
           </div>
 
-          <div className="preview-box">{generatedMarkdown}</div>
-
-          <h2>Cover Letter Preview</h2>
-          <p className="aside-copy">
-            Ini adalah draft surat lamaran yang dibangun dari format CV aktif,
-            detail perusahaan, dan hasil tailoring job description.
-          </p>
-
-          <div className="preview-box preview-box-secondary">
-            {generatedCoverLetter}
+          <div className="preview-switcher" role="tablist" aria-label="Output previews">
+            {[
+              { id: "cv", label: "CV" },
+              { id: "cover-letter", label: "Cover Letter" },
+              { id: "recruiter", label: "Recruiter Msg" },
+              { id: "insights", label: "Insights" },
+            ].map((panel) => (
+              <button
+                key={panel.id}
+                type="button"
+                className={`preview-switch ${
+                  activePreviewPanel === panel.id ? "preview-switch-active" : ""
+                }`.trim()}
+                onClick={() => setActivePreviewPanel(panel.id as PreviewPanel)}
+              >
+                {panel.label}
+              </button>
+            ))}
           </div>
 
-          <h2>Recruiter Message Preview</h2>
-          <p className="aside-copy">
-            Pesan pendek ini dibuat untuk kontak pertama yang cepat dan tetap
-            relevan dengan role target.
-          </p>
+          {activePreviewPanel === "cv" ? (
+            <>
+              <h2>Live DOCX Source</h2>
+              <p className="aside-copy">
+                Preview ini menunjukkan isi final yang akan dipakai saat generate
+                `.docx`.
+              </p>
+              <div className="preview-box">{generatedMarkdown}</div>
+            </>
+          ) : null}
 
-          <div className="preview-box preview-box-tertiary">{recruiterMessage}</div>
+          {activePreviewPanel === "cover-letter" ? (
+            <>
+              <h2>Cover Letter Preview</h2>
+              <p className="aside-copy">
+                Ini adalah draft surat lamaran yang dibangun dari format CV aktif,
+                detail perusahaan, dan hasil tailoring job description.
+              </p>
+              <div className="preview-box preview-box-secondary">
+                {generatedCoverLetter}
+              </div>
+            </>
+          ) : null}
+
+          {activePreviewPanel === "recruiter" ? (
+            <>
+              <h2>Recruiter Message Preview</h2>
+              <p className="aside-copy">
+                Pesan pendek ini dibuat untuk kontak pertama yang cepat dan tetap
+                relevan dengan role target.
+              </p>
+              <div className="preview-box preview-box-tertiary">
+                {recruiterMessage}
+              </div>
+            </>
+          ) : null}
+
+          {activePreviewPanel === "insights" ? (
+            <>
+              <h2>Quick Insights</h2>
+              <p className="aside-copy">
+                Ringkasan cepat untuk memastikan output sudah cukup siap sebelum
+                kamu export.
+              </p>
+              <div className="insight-grid">
+                <div className="insight-card">
+                  <strong>Match Score</strong>
+                  <p>
+                    {matchAnalysis.isReady
+                      ? `${matchAnalysis.score}% • ${matchAnalysis.scoreLabel}`
+                      : "Belum ada score karena job description belum dipaste."}
+                  </p>
+                </div>
+                <div className="insight-card">
+                  <strong>Format</strong>
+                  <p>{activeMode.title}</p>
+                </div>
+                <div className="insight-card">
+                  <strong>Template</strong>
+                  <p>{selectedTemplateLabel}</p>
+                </div>
+                <div className="insight-card">
+                  <strong>Language</strong>
+                  <p>
+                    {communicationLanguage === "id"
+                      ? "Bahasa Indonesia"
+                      : "English"}
+                  </p>
+                </div>
+                <div className="insight-card">
+                  <strong>Keywords</strong>
+                  <p>
+                    {tailoring.detectedKeywords.length > 0
+                      ? tailoring.detectedKeywords.join(", ")
+                      : "Belum ada keyword dari job description."}
+                  </p>
+                </div>
+                <div className="insight-card">
+                  <strong>Recommended Next Fix</strong>
+                  <p>
+                    {matchAnalysis.recommendations[0] ||
+                      "CV aktif sudah cukup rapi untuk lanjut export."}
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : null}
 
           <div className="meta-list">
             <div className="meta-item">
@@ -2390,6 +2697,10 @@ export function CvDocxGenerator() {
               </p>
             </div>
             <div className="meta-item">
+              <strong>Match Summary</strong>
+              <p>{matchAnalysis.summary}</p>
+            </div>
+            <div className="meta-item">
               <strong>Tailoring insights</strong>
               {jobDescription.trim() ? (
                 <ul>
@@ -2403,34 +2714,16 @@ export function CvDocxGenerator() {
                   ) : (
                     <li>No strong keywords detected yet from the job description.</li>
                   )}
+                  {matchAnalysis.missingTechnicalKeywords.length > 0 ? (
+                    <li>
+                      Missing technical signals:{" "}
+                      {matchAnalysis.missingTechnicalKeywords.join(", ")}
+                    </li>
+                  ) : null}
                 </ul>
               ) : (
                 <p>Paste job description to see detected role and keywords.</p>
               )}
-            </div>
-            <div className="meta-item">
-              <strong>Available input styles</strong>
-              <ul>
-                <li>Professional CV form for full detail</li>
-                <li>ATS form for targeted job applications</li>
-                <li>Minimal form for one-page resume</li>
-                <li>Markdown mode for advanced manual editing</li>
-              </ul>
-            </div>
-            <div className="meta-item">
-              <strong>DOCX output behavior</strong>
-              <p>
-                Heading, bullet, bold text, link, dan template visual akan
-                otomatis dipetakan ke struktur dokumen Word ketika kamu klik
-                generate.
-              </p>
-            </div>
-            <div className="meta-item">
-              <strong>PDF output behavior</strong>
-              <p>
-                Konten CV dan cover letter juga bisa diexport ke PDF langsung
-                dari app, menggunakan template visual yang sama.
-              </p>
             </div>
             <div className="meta-item">
               <strong>Cover letter behavior</strong>
