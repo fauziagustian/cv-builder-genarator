@@ -42,9 +42,7 @@ export async function POST(request: Request) {
     documentKind: body.documentKind || "cv",
     visualAssets: body.visualAssets,
   });
-  const fileName = sanitizeFileName(
-    body.fileName || "muhammad-fauzi-agustian-cv"
-  );
+  const fileName = sanitizeFileName(body.fileName || "sample-fullstack-cv");
 
   return new NextResponse(new Uint8Array(buffer), {
     status: 200,

@@ -292,8 +292,8 @@ export function CvDocxGenerator() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const profilePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const signatureInputRef = useRef<HTMLInputElement | null>(null);
-  const [fileName, setFileName] = useState("muhammad-fauzi-agustian-cv");
-  const [draftName, setDraftName] = useState("default-application");
+  const [fileName, setFileName] = useState("sample-fullstack-cv");
+  const [draftName, setDraftName] = useState("sample-application");
   const [namedDrafts, setNamedDrafts] = useState<NamedDraftSummary[]>([]);
   const [inputMode, setInputMode] = useState<CvInputMode>("professional");
   const [selectedTemplate, setSelectedTemplate] =
@@ -1143,7 +1143,7 @@ export function CvDocxGenerator() {
               className="input"
               value={fileName}
               onChange={(event) => setFileName(event.target.value)}
-              placeholder="muhammad-fauzi-agustian-cv"
+              placeholder="sample-fullstack-cv"
             />
           </div>
 
@@ -1304,7 +1304,7 @@ export function CvDocxGenerator() {
                   id="named-draft"
                   label="Named draft"
                   value={draftName}
-                  placeholder="misalnya: maybank-remote-2026"
+                  placeholder="misalnya: remote-node-react-role"
                   onChange={setDraftName}
                 />
               </div>

@@ -105,162 +105,149 @@ export function createEmptyAtsExperience(): AtsExperience {
 
 export function createInitialProfessionalCvForm(): ProfessionalCvForm {
   return {
-    fullName: "MUHAMMAD FAUZI AGUSTIAN",
-    title: "Senior Fullstack Developer (Node.js | React | REST APIs | Microservices | Cloud)",
-    location: "Indonesia",
-    email: "fauziagst04@gmail.com",
-    phone: "+62 896-9768-5267",
-    linkedin: "https://www.linkedin.com/in/muhammad-fauzi-agustian/",
+    fullName: "ALEXANDRA REYES",
+    title:
+      "Senior Fullstack Developer (Node.js | React | Cloudflare | Platform Engineering)",
+    location: "Singapore | Open to Remote",
+    email: "alex.reyes@example.com",
+    phone: "+1 415 555 0142",
+    linkedin: "https://www.linkedin.com/in/sample-fullstack-profile",
     summary:
-      "Senior Fullstack Developer with 5+ years of experience building scalable, secure, and high-performance web applications across banking, enterprise, and startup environments.\n\nStrong expertise in backend development with Node.js, Java, and Go, combined with hands-on frontend experience using React and modern JavaScript/TypeScript. Proven track record in designing and building RESTful APIs, optimizing distributed systems, and delivering production-ready applications with strong attention to performance, security, and reliability.\n\nExperienced working independently in remote environments and collaborating effectively with product, design, QA, and engineering teams to deliver end-to-end solutions.",
+      "Senior Fullstack Developer with 6+ years of experience building secure, scalable, and high-performance web platforms across SaaS, fintech, and B2B commerce environments.\n\nStrong background in Node.js and React, with hands-on experience designing REST APIs, shipping edge-enabled features with Cloudflare, and operating cloud-native services with solid observability and CI/CD workflows.\n\nComfortable working independently in remote teams, collaborating with product, design, QA, and engineering partners, and turning ambiguous requirements into polished production systems.",
     skills: {
-      frontend: "React.js\nJavaScript\nTypeScript\nHTML\nCSS",
+      frontend: "React.js\nNext.js\nTypeScript\nJavaScript\nHTML\nCSS",
       backend:
-        "Node.js (Express.js)\nJava (Spring Boot)\nGo (Gin/Fiber)\nPHP (Laravel)",
+        "Node.js (Express.js, Fastify)\nPython (FastAPI)\nGo (Fiber)\nBackground jobs and service integrations",
       architecture:
-        "RESTful API Design\nMicroservices Architecture\nEvent-driven Architecture (Kafka, MQ)\nSystem Design\nJWT\nOAuth2\nHTTPS\nAPI Security\nRate Limiting",
+        "RESTful API Design\nMicroservices Architecture\nEvent-driven Systems\nSystem Design\nJWT\nOAuth2\nAPI Security\nRate Limiting\nEdge caching strategy",
       cloud:
-        "Docker\nKubernetes\nCI/CD\nGitOps (ArgoCD)\nHelm\nAWS\nAzure\nGCP\nCDN and edge-ready delivery",
-      databases: "MySQL\nPostgreSQL\nOracle\nCassandra\nNeo4j",
-      tools: "Dynatrace\nGrafana\nDatadog\nAzure Logs\nGit\nPostman\nSwagger",
+        "Cloudflare Workers\nCloudflare CDN\nCloudflare WAF\nDocker\nKubernetes\nCI/CD\nGitHub Actions\nAWS\nVercel",
+      databases: "PostgreSQL\nMySQL\nRedis\nElasticsearch",
+      tools: "Datadog\nGrafana\nSentry\nGit\nPostman\nSwagger",
     },
     experiences: [
       {
-        role: "Senior Fullstack & DevOps Engineer",
-        company: "Cybe Pty Ltd (Block Identity)",
-        period: "Feb 2026 - Present",
-        location: "Remote (Australia)",
+        role: "Senior Fullstack Developer",
+        company: "Northstar Labs",
+        period: "Mar 2024 - Present",
+        location: "Remote (Singapore)",
         bullets:
-          "Built an end-to-end platform from scratch, covering backend services, infrastructure, and deployment workflows.\nDesigned a scalable microservices architecture with clear API contracts and service-to-service communication patterns.\nDeveloped high-performance REST APIs and ensured smooth readiness for frontend integration.\nImplemented graph-based data modeling using Neo4j for complex relationship-driven use cases.\nContainerized services with Docker and deployed them to Kubernetes environments.\nBuilt and maintained CI/CD pipelines using GitOps with ArgoCD and Helm.\nStrengthened platform reliability through monitoring, logging, troubleshooting, and operational improvements.\nWorked directly with leadership in a fully remote environment and delivered independently across backend and infrastructure areas.",
+          "Led delivery of a Node.js and React platform used by multi-region SaaS customers.\nBuilt and maintained REST APIs, background jobs, and internal tooling for support and operations teams.\nIntegrated Cloudflare Workers, CDN caching, and security rules to improve edge performance and request protection.\nReduced median page load time by 37% through API tuning, caching strategy, and frontend optimization.\nPartnered with product, design, and QA in a remote environment and shipped features from discovery to production.",
       },
       {
-        role: "Senior Fullstack Engineer (Backend-focused)",
-        company: "AMK Technology (Client: Maybank)",
-        period: "Jan 2025 - Dec 2025",
-        location: "",
+        role: "Fullstack Engineer",
+        company: "Atlas Commerce Cloud",
+        period: "Jan 2022 - Feb 2024",
+        location: "Kuala Lumpur, Malaysia",
         bullets:
-          "Developed scalable backend services for a mobile banking platform with strong focus on performance and reliability.\nDesigned and implemented secure RESTful APIs consumed by frontend and mobile applications.\nBuilt fraud detection and device validation systems for high-security use cases.\nIntegrated services with ESB, OTP services, and core banking systems.\nCollaborated closely with frontend, QA, and product teams in an Agile delivery model.\nEnsured application security, responsiveness, and production stability.",
+          "Developed React dashboards and Node.js services for B2B order, inventory, and catalog workflows.\nDesigned reusable API contracts consumed by web clients, back-office tools, and partner integrations.\nIntroduced CI/CD pipelines with GitHub Actions and container-based preview deployments.\nImproved application monitoring with Grafana and Sentry, shortening issue triage time across the engineering team.",
       },
       {
-        role: "Senior Application Support Engineer (Fullstack Systems)",
-        company: "PT Global Intra Talenta (Client: AIA Financial)",
-        period: "Mar 2024 - Mar 2025",
-        location: "",
+        role: "Software Engineer",
+        company: "Harbor Health Systems",
+        period: "Jun 2020 - Dec 2021",
+        location: "Jakarta, Indonesia",
         bullets:
-          "Diagnosed and resolved fullstack issues across frontend, backend, APIs, and infrastructure.\nImproved system response time from 19 seconds to 8 seconds, delivering a 58% performance improvement.\nInvestigated logs, traces, and API behavior using Dynatrace and Azure Logs.\nPerformed root cause analysis and coordinated fixes with engineering teams.\nProposed and implemented improvements that enhanced both performance and user experience.",
+          "Built appointment, billing, and reporting modules for an internal healthcare operations platform.\nRefactored legacy endpoints into modular services and improved test coverage for critical business flows.\nCollaborated across backend, frontend, and QA to stabilize releases and reduce regression issues.\nAutomated deployment checks and incident dashboards to support faster production response.",
       },
       {
-        role: "Senior Software Engineer",
-        company: "Multi Arta Sentosa Bank",
-        period: "Jul 2023 - Mar 2024",
-        location: "",
+        role: "Junior Web Developer",
+        company: "Brightlane Studio",
+        period: "Jul 2018 - May 2020",
+        location: "Bandung, Indonesia",
         bullets:
-          "Led backend development using Java Spring Boot and Kafka for enterprise-grade systems.\nRefactored a monolithic application into a scalable microservices architecture.\nCollaborated with frontend teams to deliver integrated end-to-end features.\nImproved code quality, reduced technical debt, and increased test coverage to 95%.\nConducted code reviews and supported other engineers through technical mentoring.",
-      },
-      {
-        role: "Middle Software Engineer",
-        company: "Informasi Teknologi Indonesia",
-        period: "Aug 2022 - Aug 2023",
-        location: "",
-        bullets:
-          "Developed backend services using Java Spring Boot and Go.\nDesigned and built REST APIs for frontend integration.\nSupported migration from monolithic architecture to microservices.\nImproved system scalability and service performance.",
-      },
-      {
-        role: "Fullstack Developer",
-        company: "Mitreka Solusi Indonesia",
-        period: "Jan 2021 - Aug 2022",
-        location: "",
-        bullets:
-          "Built fullstack applications using Node.js (Express) and JavaScript/TypeScript.\nDeveloped REST APIs and CMS systems for business applications.\nBuilt frontend interfaces and integrated them with backend services.\nDeveloped an LMS platform using Moodle and custom plugins.\nProduced API documentation and unit tests to support maintainability and team collaboration.",
+          "Built marketing sites and lightweight CMS modules for SME clients using JavaScript and Node.js.\nSupported UI implementation, API integrations, and content publishing workflows.\nHelped standardize reusable frontend components and deployment checklists for agency projects.",
       },
     ],
     achievements:
-      "Built a production-ready platform from scratch across backend, infrastructure, and CI/CD layers.\nImproved application performance by more than 50% in a production environment.\nLed microservices transformation initiatives in enterprise systems.\nBuilt strong expertise in debugging, root cause analysis, and production issue resolution.\nWorked effectively with global stakeholders in remote delivery environments.",
+      "Improved production performance by more than 35% through caching, API tuning, and frontend optimization.\nBuilt secure API and edge delivery patterns using Cloudflare, CI/CD, and observability tooling.\nLed remote collaboration across product, design, QA, and engineering teams.\nShipped production-ready features from architecture planning through post-release support.",
     education: [
       {
-        degree: "Bachelor of Information Systems",
-        school: "Bina Nusantara University",
-        details: "GPA: 3.67",
+        degree: "Bachelor of Computer Science",
+        school: "Pacific International University",
+        details: "Graduated with Distinction",
       },
       {
-        degree: "Diploma in Computer Engineering",
-        school: "Bogor Agricultural University",
-        details: "GPA: 3.09",
+        degree: "Diploma in Software Engineering",
+        school: "City Institute of Technology",
+        details: "GPA: 3.72 / 4.00",
       },
     ],
-    languages: "English (Professional Working Proficiency)\nIndonesian (Native)",
+    languages:
+      "English (Professional Working Proficiency)\nIndonesian (Native)\nMandarin (Conversational)",
   };
 }
 
 export function createInitialAtsCvForm(): AtsCvForm {
   return {
-    fullName: "MUHAMMAD FAUZI AGUSTIAN",
+    fullName: "ALEXANDRA REYES",
     title: "Senior Fullstack Developer",
-    targetRole: "Senior Fullstack Developer (Remote Contract)",
-    location: "Indonesia",
-    email: "fauziagst04@gmail.com",
-    phone: "+62 896-9768-5267",
-    linkedin: "https://www.linkedin.com/in/muhammad-fauzi-agustian/",
+    targetRole: "Senior Fullstack Developer (Remote Product Team)",
+    location: "Singapore | Open to Remote",
+    email: "alex.reyes@example.com",
+    phone: "+1 415 555 0142",
+    linkedin: "https://www.linkedin.com/in/sample-fullstack-profile",
     summary:
-      "Senior Fullstack Developer with 5+ years of experience building scalable, secure, and high-performance applications across banking, enterprise, and startup environments. Strong practical experience with Node.js, React, RESTful APIs, microservices, CI/CD, debugging, and remote collaboration.",
+      "Senior Fullstack Developer with 6+ years of experience building secure, scalable, and high-performance product platforms. Strong practical experience with Node.js, React, Cloudflare, RESTful APIs, CI/CD, debugging, and remote collaboration.",
     competencies:
-      "Node.js\nReact.js\nRESTful APIs\nSystem Design\nMicroservices\nWeb Security\nTroubleshooting\nRemote Collaboration",
+      "Node.js\nReact.js\nRESTful APIs\nSystem Design\nCloudflare\nWeb Security\nTroubleshooting\nRemote Collaboration",
     technicalKeywords:
-      "JavaScript\nTypeScript\nExpress.js\nDocker\nKubernetes\nGit\nCI/CD\nArgoCD\nHelm\nCloud CDN\nOAuth2\nJWT",
+      "JavaScript\nTypeScript\nExpress.js\nFastify\nCloudflare Workers\nCloudflare CDN\nDocker\nKubernetes\nGitHub Actions\nCI/CD\nOAuth2\nJWT",
     experiences: [
       {
-        role: "Senior Fullstack & DevOps Engineer",
-        company: "Cybe Pty Ltd (Block Identity)",
-        period: "Feb 2026 - Present",
+        role: "Senior Fullstack Developer",
+        company: "Northstar Labs",
+        period: "Mar 2024 - Present",
         impact:
-          "Built an end-to-end platform from scratch, developed REST APIs, deployed services with Docker and Kubernetes, and maintained GitOps delivery pipelines in a remote environment.",
+          "Led a Node.js and React platform, built REST APIs and support tooling, and integrated Cloudflare edge services to improve performance and request security in a remote setup.",
         keywords:
-          "Node.js, APIs, CI/CD, Kubernetes, remote collaboration, debugging",
+          "Node.js, React, Cloudflare, APIs, remote collaboration, debugging",
       },
       {
-        role: "Senior Fullstack Engineer (Backend-focused)",
-        company: "AMK Technology (Client: Maybank)",
-        period: "Jan 2025 - Dec 2025",
+        role: "Fullstack Engineer",
+        company: "Atlas Commerce Cloud",
+        period: "Jan 2022 - Feb 2024",
         impact:
-          "Developed scalable backend services, secure APIs, fraud detection, and integrations with banking systems while partnering with frontend, QA, and product teams.",
+          "Developed React dashboards, Node.js services, reusable APIs, and CI/CD workflows for B2B commerce operations while partnering with cross-functional teams.",
         keywords:
-          "Node.js, RESTful APIs, security, system integration, Agile",
+          "Node.js, React, RESTful APIs, CI/CD, product collaboration",
       },
       {
-        role: "Senior Application Support Engineer",
-        company: "PT Global Intra Talenta (Client: AIA Financial)",
-        period: "Mar 2024 - Mar 2025",
+        role: "Software Engineer",
+        company: "Harbor Health Systems",
+        period: "Jun 2020 - Dec 2021",
         impact:
-          "Improved system performance from 19 seconds to 8 seconds and led fullstack troubleshooting across frontend, backend, logs, and infrastructure.",
+          "Improved system reliability by modernizing legacy endpoints, stabilizing releases, and supporting incident response through better automation and observability.",
         keywords:
-          "performance optimization, root cause analysis, monitoring, logs",
+          "performance optimization, root cause analysis, monitoring, production support",
       },
     ],
     achievements:
-      "Improved application performance by 58% in production.\nLed backend and infrastructure delivery in remote teams.\nBuilt enterprise-grade APIs with strong focus on reliability and security.",
+      "Improved production performance by more than 35% through caching and API optimization.\nBuilt edge-ready delivery patterns using Cloudflare and CI/CD.\nLed implementation across product, design, QA, and engineering teams in remote environments.",
     education:
-      "Bachelor of Information Systems - Bina Nusantara University (GPA: 3.67)\nDiploma in Computer Engineering - Bogor Agricultural University (GPA: 3.09)",
-    languages: "English (Professional Working Proficiency)\nIndonesian (Native)",
+      "Bachelor of Computer Science - Pacific International University (Graduated with Distinction)\nDiploma in Software Engineering - City Institute of Technology (GPA: 3.72 / 4.00)",
+    languages:
+      "English (Professional Working Proficiency)\nIndonesian (Native)\nMandarin (Conversational)",
   };
 }
 
 export function createInitialMinimalCvForm(): MinimalCvForm {
   return {
-    fullName: "MUHAMMAD FAUZI AGUSTIAN",
+    fullName: "ALEXANDRA REYES",
     title: "Senior Fullstack Developer",
     contactLine:
-      "Indonesia | fauziagst04@gmail.com | +62 896-9768-5267 | LinkedIn: https://www.linkedin.com/in/muhammad-fauzi-agustian/",
+      "Singapore | Open to Remote | alex.reyes@example.com | +1 415 555 0142 | LinkedIn: https://www.linkedin.com/in/sample-fullstack-profile",
     summary:
-      "Senior Fullstack Developer with 5+ years of experience building secure and scalable applications across banking, enterprise, and startup environments.",
+      "Senior Fullstack Developer with 6+ years of experience building secure and scalable product platforms across SaaS, fintech, and commerce environments.",
     keySkills:
-      "Node.js\nReact.js\nJavaScript\nTypeScript\nRESTful APIs\nMicroservices\nDocker\nKubernetes\nCI/CD\nSystem Design",
+      "Node.js\nReact.js\nTypeScript\nRESTful APIs\nCloudflare\nWeb Security\nDocker\nCI/CD\nSystem Design\nRemote Collaboration",
     highlights:
-      "Built a production-ready platform from scratch.\nImproved application performance by more than 50%.\nLed microservices transformation in enterprise systems.\nExperienced working independently in remote teams.",
+      "Built and scaled customer-facing platforms with Node.js and React.\nImproved production performance by more than 35%.\nIntegrated Cloudflare services for faster and safer delivery.\nExperienced working independently in remote product teams.",
     experienceSnapshot:
-      "Senior Fullstack & DevOps Engineer - Cybe Pty Ltd (2026 - Present)\nSenior Fullstack Engineer - AMK Technology / Maybank (2025)\nSenior Application Support Engineer - PT Global Intra Talenta / AIA Financial (2024 - 2025)\nSenior Software Engineer - Multi Arta Sentosa Bank (2023 - 2024)",
+      "Senior Fullstack Developer - Northstar Labs (2024 - Present)\nFullstack Engineer - Atlas Commerce Cloud (2022 - 2024)\nSoftware Engineer - Harbor Health Systems (2020 - 2021)\nJunior Web Developer - Brightlane Studio (2018 - 2020)",
     education:
-      "Bachelor of Information Systems - Bina Nusantara University (GPA: 3.67)\nDiploma in Computer Engineering - Bogor Agricultural University (GPA: 3.09)",
-    languages: "English\nIndonesian",
+      "Bachelor of Computer Science - Pacific International University\nDiploma in Software Engineering - City Institute of Technology",
+    languages: "English\nIndonesian\nMandarin",
   };
 }
 
