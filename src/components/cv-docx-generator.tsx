@@ -10,11 +10,16 @@ import {
 } from "@/lib/cv/cover-letter";
 import {
   ACTIVE_DRAFT_STORAGE_KEY,
+  deleteNamedStarter,
   deleteNamedDraft,
   listNamedDrafts,
+  listNamedStarters,
   loadNamedDraft,
+  loadNamedStarter,
   saveNamedDraft,
+  saveNamedStarter,
   type NamedDraftSummary,
+  type NamedStarterSummary,
 } from "@/lib/cv/drafts";
 import {
   DOCX_TEMPLATE_OPTIONS,
@@ -28,8 +33,11 @@ import {
   createEmptyEducation,
   createEmptyExperience,
   createInitialAtsCvForm,
+  createInitialMarkdownCv,
   createInitialMinimalCvForm,
   createInitialProfessionalCvForm,
+  getSampleProfileDefaults,
+  SAMPLE_PROFILE_OPTIONS,
   type AtsCvForm,
   type AtsExperience,
   type CvEducation,
@@ -38,8 +46,8 @@ import {
   type MinimalCvForm,
   type ProfessionalCvForm,
   type ProfessionalSkills,
+  type SampleProfileId,
 } from "@/lib/cv/formats";
-import { CV_TEMPLATE_MARKDOWN } from "@/lib/cv/template";
 import {
   analyzeCvJobMatch,
   analyzeJobDescription,
@@ -96,8 +104,15 @@ const INPUT_MODES: Array<{
   },
 ];
 
+const DEFAULT_SAMPLE_PROFILE: SampleProfileId = "fullstack";
+const DEFAULT_SAMPLE_META = getSampleProfileDefaults(DEFAULT_SAMPLE_PROFILE);
+
 type DraftSnapshot = {
   savedAt: string;
+  sampleProfile: SampleProfileId;
+  activeStarterKind: "built-in" | "custom";
+  activeCustomStarterId: string | null;
+  activeCustomStarterName: string | null;
   fileName: string;
   inputMode: CvInputMode;
   selectedTemplate: DocxTemplate;
@@ -116,6 +131,21 @@ type ImportedSnapshot = Partial<DraftSnapshot> & {
 };
 
 type PreviewPanel = "cv" | "cover-letter" | "recruiter" | "insights";
+
+type CustomStarterSnapshot = {
+  savedAt: string;
+  sampleProfile: SampleProfileId;
+  fileName: string;
+  draftName: string;
+  markdown: string;
+  professionalForm: ProfessionalCvForm;
+  atsForm: AtsCvForm;
+  minimalForm: MinimalCvForm;
+};
+
+function isSampleProfileId(value: string): value is SampleProfileId {
+  return SAMPLE_PROFILE_OPTIONS.some((profile) => profile.id === value);
+}
 
 function formatSavedTime(value: string | null) {
   if (!value) {
@@ -157,9 +187,10 @@ function describeVisualAsset(asset: StoredVisualAsset | null) {
 }
 
 function hydrateProfessionalForm(
-  snapshot?: Partial<ProfessionalCvForm>
+  snapshot?: Partial<ProfessionalCvForm>,
+  sampleProfile: SampleProfileId = DEFAULT_SAMPLE_PROFILE
 ): ProfessionalCvForm {
-  const defaults = createInitialProfessionalCvForm();
+  const defaults = createInitialProfessionalCvForm(sampleProfile);
 
   if (!snapshot) {
     return defaults;
@@ -189,8 +220,11 @@ function hydrateProfessionalForm(
   };
 }
 
-function hydrateAtsForm(snapshot?: Partial<AtsCvForm>): AtsCvForm {
-  const defaults = createInitialAtsCvForm();
+function hydrateAtsForm(
+  snapshot?: Partial<AtsCvForm>,
+  sampleProfile: SampleProfileId = DEFAULT_SAMPLE_PROFILE
+): AtsCvForm {
+  const defaults = createInitialAtsCvForm(sampleProfile);
 
   if (!snapshot) {
     return defaults;
@@ -209,9 +243,12 @@ function hydrateAtsForm(snapshot?: Partial<AtsCvForm>): AtsCvForm {
   };
 }
 
-function hydrateMinimalForm(snapshot?: Partial<MinimalCvForm>): MinimalCvForm {
+function hydrateMinimalForm(
+  snapshot?: Partial<MinimalCvForm>,
+  sampleProfile: SampleProfileId = DEFAULT_SAMPLE_PROFILE
+): MinimalCvForm {
   return {
-    ...createInitialMinimalCvForm(),
+    ...createInitialMinimalCvForm(sampleProfile),
     ...snapshot,
   };
 }
@@ -292,9 +329,26 @@ export function CvDocxGenerator() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const profilePhotoInputRef = useRef<HTMLInputElement | null>(null);
   const signatureInputRef = useRef<HTMLInputElement | null>(null);
-  const [fileName, setFileName] = useState("sample-fullstack-cv");
-  const [draftName, setDraftName] = useState("sample-application");
+  const [sampleProfile, setSampleProfile] =
+    useState<SampleProfileId>(DEFAULT_SAMPLE_PROFILE);
+  const [activeStarterKind, setActiveStarterKind] = useState<
+    "built-in" | "custom"
+  >("built-in");
+  const [activeCustomStarterId, setActiveCustomStarterId] = useState<
+    string | null
+  >(null);
+  const [activeCustomStarterName, setActiveCustomStarterName] = useState<
+    string | null
+  >(null);
+  const [fileName, setFileName] = useState(DEFAULT_SAMPLE_META.fileName);
+  const [draftName, setDraftName] = useState(DEFAULT_SAMPLE_META.draftName);
+  const [customStarterName, setCustomStarterName] = useState(
+    "my-custom-starter"
+  );
   const [namedDrafts, setNamedDrafts] = useState<NamedDraftSummary[]>([]);
+  const [customStarters, setCustomStarters] = useState<NamedStarterSummary[]>(
+    []
+  );
   const [inputMode, setInputMode] = useState<CvInputMode>("professional");
   const [selectedTemplate, setSelectedTemplate] =
     useState<DocxTemplate>("classic");
@@ -304,13 +358,17 @@ export function CvDocxGenerator() {
     createEmptyVisualAssets
   );
   const [jobDescription, setJobDescription] = useState("");
-  const [markdown, setMarkdown] = useState(CV_TEMPLATE_MARKDOWN);
-  const [professionalForm, setProfessionalForm] = useState<ProfessionalCvForm>(
-    createInitialProfessionalCvForm
+  const [markdown, setMarkdown] = useState(() =>
+    createInitialMarkdownCv(DEFAULT_SAMPLE_PROFILE)
   );
-  const [atsForm, setAtsForm] = useState<AtsCvForm>(createInitialAtsCvForm);
+  const [professionalForm, setProfessionalForm] = useState<ProfessionalCvForm>(
+    () => createInitialProfessionalCvForm(DEFAULT_SAMPLE_PROFILE)
+  );
+  const [atsForm, setAtsForm] = useState<AtsCvForm>(() =>
+    createInitialAtsCvForm(DEFAULT_SAMPLE_PROFILE)
+  );
   const [minimalForm, setMinimalForm] = useState<MinimalCvForm>(
-    createInitialMinimalCvForm
+    () => createInitialMinimalCvForm(DEFAULT_SAMPLE_PROFILE)
   );
   const [coverLetterForm, setCoverLetterForm] = useState<CoverLetterForm>(
     createInitialCoverLetterForm
@@ -326,6 +384,13 @@ export function CvDocxGenerator() {
 
   const activeMode =
     INPUT_MODES.find((mode) => mode.id === inputMode) || INPUT_MODES[0];
+  const activeSampleOption =
+    SAMPLE_PROFILE_OPTIONS.find((profile) => profile.id === sampleProfile) ||
+    SAMPLE_PROFILE_OPTIONS[0];
+  const activeStarterLabel =
+    activeStarterKind === "custom" && activeCustomStarterName
+      ? activeCustomStarterName
+      : activeSampleOption.title;
   const tailoring = analyzeJobDescription(jobDescription);
 
   const generatedMarkdown =
@@ -361,6 +426,10 @@ export function CvDocxGenerator() {
   const buildSnapshot = useCallback(
     (savedAt: string): DraftSnapshot => ({
       savedAt,
+      sampleProfile,
+      activeStarterKind,
+      activeCustomStarterId,
+      activeCustomStarterName,
       fileName,
       inputMode,
       selectedTemplate,
@@ -375,6 +444,9 @@ export function CvDocxGenerator() {
     }),
     [
       atsForm,
+      activeCustomStarterId,
+      activeCustomStarterName,
+      activeStarterKind,
       communicationLanguage,
       coverLetterForm,
       fileName,
@@ -383,12 +455,26 @@ export function CvDocxGenerator() {
       markdown,
       minimalForm,
       professionalForm,
+      sampleProfile,
       selectedTemplate,
       visualAssets,
     ]
   );
 
-  function applySnapshot(snapshot: ImportedSnapshot) {
+  const applySnapshot = useCallback((snapshot: ImportedSnapshot) => {
+    const resolvedSampleProfile =
+      typeof snapshot.sampleProfile === "string" &&
+      isSampleProfileId(snapshot.sampleProfile)
+        ? snapshot.sampleProfile
+        : DEFAULT_SAMPLE_PROFILE;
+
+    setSampleProfile(resolvedSampleProfile);
+    setActiveStarterKind(
+      snapshot.activeStarterKind === "custom" ? "custom" : "built-in"
+    );
+    setActiveCustomStarterId(snapshot.activeCustomStarterId || null);
+    setActiveCustomStarterName(snapshot.activeCustomStarterName || null);
+
     if (typeof snapshot.fileName === "string") {
       setFileName(snapshot.fileName);
     }
@@ -424,11 +510,17 @@ export function CvDocxGenerator() {
 
     if (typeof snapshot.markdown === "string") {
       setMarkdown(snapshot.markdown);
+    } else {
+      setMarkdown(createInitialMarkdownCv(resolvedSampleProfile));
     }
 
-    setProfessionalForm(hydrateProfessionalForm(snapshot.professionalForm));
-    setAtsForm(hydrateAtsForm(snapshot.atsForm));
-    setMinimalForm(hydrateMinimalForm(snapshot.minimalForm));
+    setProfessionalForm(
+      hydrateProfessionalForm(snapshot.professionalForm, resolvedSampleProfile)
+    );
+    setAtsForm(hydrateAtsForm(snapshot.atsForm, resolvedSampleProfile));
+    setMinimalForm(
+      hydrateMinimalForm(snapshot.minimalForm, resolvedSampleProfile)
+    );
     setCoverLetterForm(hydrateCoverLetterForm(snapshot.coverLetterForm));
 
     if (typeof snapshot.draftName === "string" && snapshot.draftName.trim()) {
@@ -438,7 +530,7 @@ export function CvDocxGenerator() {
     if (typeof snapshot.savedAt === "string") {
       setLastSavedAt(snapshot.savedAt);
     }
-  }
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -449,6 +541,9 @@ export function CvDocxGenerator() {
       try {
         const raw = window.localStorage.getItem(ACTIVE_DRAFT_STORAGE_KEY);
         setNamedDrafts(listNamedDrafts<DraftSnapshot>(window.localStorage));
+        setCustomStarters(
+          listNamedStarters<CustomStarterSnapshot>(window.localStorage)
+        );
 
         if (!raw) {
           setIsDraftReady(true);
@@ -468,7 +563,7 @@ export function CvDocxGenerator() {
     }, 0);
 
     return () => window.clearTimeout(timeoutId);
-  }, []);
+  }, [applySnapshot]);
 
   useEffect(() => {
     if (!isDraftReady || typeof window === "undefined") {
@@ -603,18 +698,205 @@ export function CvDocxGenerator() {
     }));
   }
 
-  function resetCurrentMode() {
-    if (inputMode === "professional") {
-      setProfessionalForm(createInitialProfessionalCvForm());
-    } else if (inputMode === "ats") {
-      setAtsForm(createInitialAtsCvForm());
-    } else if (inputMode === "minimal") {
-      setMinimalForm(createInitialMinimalCvForm());
-    } else {
-      setMarkdown(CV_TEMPLATE_MARKDOWN);
+  function buildCustomStarterSnapshot(savedAt: string): CustomStarterSnapshot {
+    return {
+      savedAt,
+      sampleProfile,
+      fileName,
+      draftName,
+      markdown,
+      professionalForm,
+      atsForm,
+      minimalForm,
+    };
+  }
+
+  function applyCustomStarterSnapshot(
+    snapshot: Partial<CustomStarterSnapshot>,
+    starterId?: string | null,
+    starterName?: string | null
+  ) {
+    const resolvedSampleProfile =
+      typeof snapshot.sampleProfile === "string" &&
+      isSampleProfileId(snapshot.sampleProfile)
+        ? snapshot.sampleProfile
+        : DEFAULT_SAMPLE_PROFILE;
+    const defaults = getSampleProfileDefaults(resolvedSampleProfile);
+
+    setSampleProfile(resolvedSampleProfile);
+    setActiveStarterKind("custom");
+    setActiveCustomStarterId(starterId || null);
+    setActiveCustomStarterName(starterName || null);
+    setProfessionalForm(
+      hydrateProfessionalForm(snapshot.professionalForm, resolvedSampleProfile)
+    );
+    setAtsForm(hydrateAtsForm(snapshot.atsForm, resolvedSampleProfile));
+    setMinimalForm(
+      hydrateMinimalForm(snapshot.minimalForm, resolvedSampleProfile)
+    );
+    setMarkdown(
+      typeof snapshot.markdown === "string"
+        ? snapshot.markdown
+        : createInitialMarkdownCv(resolvedSampleProfile)
+    );
+    setFileName(snapshot.fileName?.trim() || defaults.fileName);
+    setDraftName(snapshot.draftName?.trim() || defaults.draftName);
+    if (starterName?.trim()) {
+      setCustomStarterName(starterName.trim());
+    }
+  }
+
+  function loadSelectedSampleProfile() {
+    const defaults = getSampleProfileDefaults(sampleProfile);
+
+    setActiveStarterKind("built-in");
+    setActiveCustomStarterId(null);
+    setActiveCustomStarterName(null);
+    setProfessionalForm(createInitialProfessionalCvForm(sampleProfile));
+    setAtsForm(createInitialAtsCvForm(sampleProfile));
+    setMinimalForm(createInitialMinimalCvForm(sampleProfile));
+    setMarkdown(createInitialMarkdownCv(sampleProfile));
+    setFileName(defaults.fileName);
+    setDraftName(defaults.draftName);
+    setStatus(
+      `Starter profile ${activeSampleOption.title} berhasil dimuat ke semua builder.`
+    );
+    setError(null);
+  }
+
+  function saveCustomStarterNow() {
+    if (typeof window === "undefined") {
+      return;
     }
 
-    setStatus(`${activeMode.title} berhasil di-reset ke template awal.`);
+    try {
+      const savedAt = new Date().toISOString();
+      const snapshot = buildCustomStarterSnapshot(savedAt);
+      const entry = saveNamedStarter(
+        window.localStorage,
+        customStarterName,
+        snapshot
+      );
+
+      setCustomStarterName(entry.starterName || customStarterName);
+      setCustomStarters(
+        listNamedStarters<CustomStarterSnapshot>(window.localStorage)
+      );
+      setActiveStarterKind("custom");
+      setActiveCustomStarterId(entry.id);
+      setActiveCustomStarterName(entry.starterName || customStarterName);
+      setStatus(`Custom starter "${entry.starterName}" berhasil disimpan.`);
+      setError(null);
+    } catch {
+      setError(
+        "Custom starter gagal disimpan. Coba kecilkan ukuran gambar atau hapus asset visual yang tidak diperlukan."
+      );
+      setStatus(null);
+    }
+  }
+
+  function loadCustomStarterById(id: string) {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const snapshot = loadNamedStarter<CustomStarterSnapshot>(
+      window.localStorage,
+      id
+    );
+
+    if (!snapshot) {
+      setError("Custom starter tidak ditemukan.");
+      setStatus(null);
+      return;
+    }
+
+    applyCustomStarterSnapshot(snapshot, id, snapshot.starterName || null);
+    setStatus(`Custom starter "${snapshot.starterName}" berhasil dimuat.`);
+    setError(null);
+  }
+
+  function deleteCustomStarterById(id: string) {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const deleted = deleteNamedStarter<CustomStarterSnapshot>(
+      window.localStorage,
+      id
+    );
+
+    if (!deleted) {
+      setError("Custom starter tidak ditemukan.");
+      setStatus(null);
+      return;
+    }
+
+    setCustomStarters(
+      listNamedStarters<CustomStarterSnapshot>(window.localStorage)
+    );
+
+    if (activeStarterKind === "custom" && activeCustomStarterId === id) {
+      setActiveStarterKind("built-in");
+      setActiveCustomStarterId(null);
+      setActiveCustomStarterName(null);
+    }
+
+    setStatus("Custom starter berhasil dihapus.");
+    setError(null);
+  }
+
+  function resetCurrentMode() {
+    if (
+      activeStarterKind === "custom" &&
+      activeCustomStarterId &&
+      typeof window !== "undefined"
+    ) {
+      const snapshot = loadNamedStarter<CustomStarterSnapshot>(
+        window.localStorage,
+        activeCustomStarterId
+      );
+
+      if (snapshot) {
+        if (inputMode === "professional") {
+          setProfessionalForm(
+            hydrateProfessionalForm(snapshot.professionalForm, snapshot.sampleProfile)
+          );
+        } else if (inputMode === "ats") {
+          setAtsForm(hydrateAtsForm(snapshot.atsForm, snapshot.sampleProfile));
+        } else if (inputMode === "minimal") {
+          setMinimalForm(
+            hydrateMinimalForm(snapshot.minimalForm, snapshot.sampleProfile)
+          );
+        } else {
+          setMarkdown(
+            typeof snapshot.markdown === "string"
+              ? snapshot.markdown
+              : createInitialMarkdownCv(snapshot.sampleProfile)
+          );
+        }
+
+        setStatus(
+          `${activeMode.title} berhasil di-reset ke custom starter ${activeStarterLabel}.`
+        );
+        setError(null);
+        return;
+      }
+    }
+
+    if (inputMode === "professional") {
+      setProfessionalForm(createInitialProfessionalCvForm(sampleProfile));
+    } else if (inputMode === "ats") {
+      setAtsForm(createInitialAtsCvForm(sampleProfile));
+    } else if (inputMode === "minimal") {
+      setMinimalForm(createInitialMinimalCvForm(sampleProfile));
+    } else {
+      setMarkdown(createInitialMarkdownCv(sampleProfile));
+    }
+
+    setStatus(
+      `${activeMode.title} berhasil di-reset ke starter ${activeStarterLabel}.`
+    );
     setError(null);
   }
 
@@ -739,10 +1021,11 @@ export function CvDocxGenerator() {
       const savedAt = new Date().toISOString();
       const snapshot = buildSnapshot(savedAt);
       const entry = saveNamedDraft(window.localStorage, draftName, snapshot);
+      const resolvedDraftName = entry.draftName || draftName;
 
-      setDraftName(entry.draftName);
+      setDraftName(resolvedDraftName);
       setNamedDrafts(listNamedDrafts<DraftSnapshot>(window.localStorage));
-      setStatus(`Draft bernama "${entry.draftName}" berhasil disimpan.`);
+      setStatus(`Draft bernama "${resolvedDraftName}" berhasil disimpan.`);
       setError(null);
     } catch {
       setError(
@@ -1146,6 +1429,117 @@ export function CvDocxGenerator() {
               placeholder="sample-fullstack-cv"
             />
           </div>
+
+          <section className="section-card section-card-inline">
+            <div className="section-header section-header-actions">
+              <div>
+                <h3>Starter Profiles</h3>
+                <p>
+                  Pilih sample profile yang paling dekat dengan kebutuhanmu.
+                  Draft aktif baru akan diisi ulang saat kamu klik{" "}
+                  <code>Load Starter Content</code>.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="button button-secondary button-small"
+                onClick={loadSelectedSampleProfile}
+              >
+                Load Starter Content
+              </button>
+            </div>
+
+            <div className="sample-profile-grid">
+              {SAMPLE_PROFILE_OPTIONS.map((profile) => (
+                <button
+                  key={profile.id}
+                  type="button"
+                  className={`sample-profile-card ${
+                    profile.id === sampleProfile
+                      ? "sample-profile-card-active"
+                      : ""
+                  }`.trim()}
+                  onClick={() => setSampleProfile(profile.id)}
+                >
+                  <span className="sample-profile-kicker">{profile.label}</span>
+                  <strong className="sample-profile-title">{profile.title}</strong>
+                  <p className="sample-profile-copy">{profile.description}</p>
+                  <span className="sample-profile-meta">{profile.fileName}</span>
+                </button>
+              ))}
+            </div>
+
+            <p className="sample-profile-note">
+              <strong>Active starter:</strong> {activeStarterLabel}.{" "}
+              {activeStarterKind === "custom"
+                ? "Reset Template akan kembali ke preset custom yang sedang aktif."
+                : "Reset Template akan kembali ke sample bawaan yang sedang dipilih."}
+            </p>
+
+            <div className="named-draft-block">
+              <div className="form-grid">
+                <Field
+                  id="custom-starter-name"
+                  label="Custom starter name"
+                  value={customStarterName}
+                  placeholder="misalnya: my-node-react-template"
+                  onChange={setCustomStarterName}
+                />
+              </div>
+
+              <div className="actions actions-tight">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={saveCustomStarterNow}
+                >
+                  Save Current as Starter
+                </button>
+              </div>
+
+              <div className="named-draft-list">
+                {customStarters.length > 0 ? (
+                  customStarters.map((starter) => (
+                    <div
+                      className={`named-draft-item ${
+                        activeStarterKind === "custom" &&
+                        activeCustomStarterId === starter.id
+                          ? "named-draft-item-active"
+                          : ""
+                      }`.trim()}
+                      key={starter.id}
+                    >
+                      <div>
+                        <strong>{starter.starterName}</strong>
+                        <p>{formatSavedTime(starter.savedAt)}</p>
+                      </div>
+                      <div className="named-draft-actions">
+                        <button
+                          type="button"
+                          className="button button-secondary button-small"
+                          onClick={() => loadCustomStarterById(starter.id)}
+                        >
+                          Load
+                        </button>
+                        <button
+                          type="button"
+                          className="button button-secondary button-small"
+                          onClick={() => deleteCustomStarterById(starter.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="named-draft-empty">
+                    Belum ada custom starter. Simpan CV aktifmu sebagai preset
+                    pribadi untuk reuse cepat di lamaran berikutnya.
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
 
           <section className="section-card section-card-inline">
             <div className="section-header">

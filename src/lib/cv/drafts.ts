@@ -1,14 +1,23 @@
 type DraftWithName<T> = T & {
   id: string;
-  draftName: string;
+  draftName?: string;
+  starterName?: string;
 };
 
 export const ACTIVE_DRAFT_STORAGE_KEY = "cv-docx-generator-draft-v1";
 export const NAMED_DRAFTS_STORAGE_KEY = "cv-docx-generator-named-drafts-v1";
+export const CUSTOM_STARTERS_STORAGE_KEY =
+  "cv-docx-generator-custom-starters-v1";
 
 export type NamedDraftSummary = {
   id: string;
   draftName: string;
+  savedAt: string;
+};
+
+export type NamedStarterSummary = {
+  id: string;
+  starterName: string;
   savedAt: string;
 };
 
@@ -31,8 +40,8 @@ function sortBySavedAtDescending<T extends { savedAt?: string }>(items: T[]) {
   });
 }
 
-function readNamedDraftMap<T>(storage: Storage) {
-  const raw = storage.getItem(NAMED_DRAFTS_STORAGE_KEY);
+function readNamedMap<T>(storage: Storage, storageKey: string) {
+  const raw = storage.getItem(storageKey);
 
   if (!raw) {
     return {} as Record<string, DraftWithName<T>>;
@@ -43,12 +52,12 @@ function readNamedDraftMap<T>(storage: Storage) {
 }
 
 export function listNamedDrafts<T>(storage: Storage): NamedDraftSummary[] {
-  const map = readNamedDraftMap<T>(storage);
+  const map = readNamedMap<T>(storage, NAMED_DRAFTS_STORAGE_KEY);
 
   return sortBySavedAtDescending(
     Object.values(map).map((entry) => ({
       id: entry.id,
-      draftName: entry.draftName,
+      draftName: entry.draftName || "Untitled Draft",
       savedAt: (entry as { savedAt?: string }).savedAt || "",
     }))
   );
@@ -61,7 +70,7 @@ export function saveNamedDraft<T extends { savedAt: string }>(
 ) {
   const normalizedName = draftName.trim() || "Untitled Draft";
   const id = slugifyDraftName(normalizedName);
-  const map = readNamedDraftMap<T>(storage);
+  const map = readNamedMap<T>(storage, NAMED_DRAFTS_STORAGE_KEY);
   const entry: DraftWithName<T> = {
     ...snapshot,
     id,
@@ -74,17 +83,64 @@ export function saveNamedDraft<T extends { savedAt: string }>(
 }
 
 export function loadNamedDraft<T>(storage: Storage, id: string) {
-  const map = readNamedDraftMap<T>(storage);
+  const map = readNamedMap<T>(storage, NAMED_DRAFTS_STORAGE_KEY);
   return map[id] || null;
 }
 
 export function deleteNamedDraft<T>(storage: Storage, id: string) {
-  const map = readNamedDraftMap<T>(storage);
+  const map = readNamedMap<T>(storage, NAMED_DRAFTS_STORAGE_KEY);
   if (!map[id]) {
     return false;
   }
 
   delete map[id];
   storage.setItem(NAMED_DRAFTS_STORAGE_KEY, JSON.stringify(map));
+  return true;
+}
+
+export function listNamedStarters<T>(storage: Storage): NamedStarterSummary[] {
+  const map = readNamedMap<T>(storage, CUSTOM_STARTERS_STORAGE_KEY);
+
+  return sortBySavedAtDescending(
+    Object.values(map).map((entry) => ({
+      id: entry.id,
+      starterName: entry.starterName || "Untitled Starter",
+      savedAt: (entry as { savedAt?: string }).savedAt || "",
+    }))
+  );
+}
+
+export function saveNamedStarter<T extends { savedAt: string }>(
+  storage: Storage,
+  starterName: string,
+  snapshot: T
+) {
+  const normalizedName = starterName.trim() || "Untitled Starter";
+  const id = slugifyDraftName(normalizedName);
+  const map = readNamedMap<T>(storage, CUSTOM_STARTERS_STORAGE_KEY);
+  const entry: DraftWithName<T> = {
+    ...snapshot,
+    id,
+    starterName: normalizedName,
+  };
+
+  map[id] = entry;
+  storage.setItem(CUSTOM_STARTERS_STORAGE_KEY, JSON.stringify(map));
+  return entry;
+}
+
+export function loadNamedStarter<T>(storage: Storage, id: string) {
+  const map = readNamedMap<T>(storage, CUSTOM_STARTERS_STORAGE_KEY);
+  return map[id] || null;
+}
+
+export function deleteNamedStarter<T>(storage: Storage, id: string) {
+  const map = readNamedMap<T>(storage, CUSTOM_STARTERS_STORAGE_KEY);
+  if (!map[id]) {
+    return false;
+  }
+
+  delete map[id];
+  storage.setItem(CUSTOM_STARTERS_STORAGE_KEY, JSON.stringify(map));
   return true;
 }
